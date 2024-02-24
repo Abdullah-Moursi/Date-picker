@@ -3,40 +3,45 @@ import axios from "axios";
 import { FallingLines } from "react-loader-spinner";
 import Table from "./Table";
 
+// API Credentials
 const baseURL = "http://api.exchangerate.host/timeframe?";
 const ACCESS_KEY = "b8e97526bd00a09c25a0b8705fd36069";
 
-interface DateRangePickerProps {
+////////////////////////////////////////////////////
+
+export interface DateRangePickerProps {
   date?: string | null;
+  exchangeDataType?: any;
 }
 
-const DatePicker: FC<DateRangePickerProps> = ({ date }) => {
+const DatePicker: FC<DateRangePickerProps> = ({ date, exchangeDataType }) => {
   const [startDate, setStartDate] = useState<typeof date>(null);
   const [endDate, setEndDate] = useState<typeof date>(null);
-  const [todayFormatted, setTodayFormatted] = useState<typeof date>(null);
-  const [exchangeData, setExchangeData] = useState<any | null>({});
+  const [todaysDate, setTodaysDate] = useState<typeof date>(null);
+  const [exchangeData, setExchangeData] = useState<typeof exchangeDataType>({});
   const [loader, setLoader] = useState<boolean>(false);
   const [error, setError] = useState<boolean>(false);
 
+  // Getting today's date on mounting
   useEffect(() => {
-    setTodayFormatted(getFormattedDate());
+    setTodaysDate(getFormattedDate());
   }, []);
 
-  const handleStartDateChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const date = event.target.value ? event.target.value : null;
-    setStartDate(date);
+  const getFormattedDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
   };
 
-  const handleEndDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const date = event.target.value ? event.target.value : null;
-    setEndDate(date);
-  };
+  ////////////////////////////////////////////////////
 
+  // Fetching Exchange Rates
   const getExchangeData = async () => {
-    setExchangeData({});
     setError(false);
+    setExchangeData({});
     setLoader(true);
     const params = {
       start_date: startDate,
@@ -46,33 +51,34 @@ const DatePicker: FC<DateRangePickerProps> = ({ date }) => {
     try {
       const response = await axios.get(baseURL, { params });
       setExchangeData(response.data);
-      setError(false);
       setLoader(false);
       if (!response.data.success) {
         setError(true);
       }
     } catch (error) {
-      console.error("Error fetching data:", error);
+      alert(`Error fetching data: ${error}`);
     }
   };
 
-  const handleSubmit = () => {
+  ////////////////////////////////////////////////////
+
+  const handleDateChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    dateType: string
+  ) => {
+    const date = event.target.value ?? null;
+
+    if (dateType === "start") setStartDate(date);
+    else if (dateType === "end") setEndDate(date);
+  };
+
+  const onSubmit = () => {
     if (startDate && endDate) {
-      setError(false);
       getExchangeData();
     } else {
       setError(true);
     }
   };
-
-  function getFormattedDate() {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0"); // Months are zero-based
-    const day = String(today.getDate()).padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  }
 
   return (
     <div className="datePicker__wrapper">
@@ -85,8 +91,8 @@ const DatePicker: FC<DateRangePickerProps> = ({ date }) => {
               type="date"
               id="startDate"
               value={startDate ?? ""}
-              onChange={handleStartDateChange}
-              max={endDate ?? todayFormatted ?? ""}
+              onChange={(e) => handleDateChange(e, "start")}
+              max={endDate ?? todaysDate ?? ""}
             />
           </div>
           <div className="datePicker__wrapper-endDate">
@@ -95,15 +101,15 @@ const DatePicker: FC<DateRangePickerProps> = ({ date }) => {
               type="date"
               id="endDate"
               value={endDate ?? ""}
-              onChange={handleEndDateChange}
+              onChange={(e) => handleDateChange(e, "end")}
               min={startDate ?? ""}
-              max={todayFormatted ?? ""}
+              max={todaysDate ?? ""}
             />
           </div>
         </div>
-        {error && <p className="errorMessage">Please select a date range</p>}
-        <button className="datePicker__submitBtn" onClick={handleSubmit}>
-          Submit
+        {error && <p className="errorMessage">Please select a valid date range</p>}
+        <button className="datePicker__submitBtn" onClick={onSubmit}>
+          Show Rates!
         </button>
       </div>
       {loader && !exchangeData.success && (

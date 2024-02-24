@@ -1,30 +1,31 @@
-import { FC } from 'react';
+import { FC } from "react";
+import { DateRangePickerProps } from "./DatePicker";
 
 interface TableProps {
-    exchangeData: any
+  exchangeData: DateRangePickerProps["exchangeDataType"];
 }
 
-const Table:FC<TableProps> = ({exchangeData}) => {
+const Table: FC<TableProps> = ({ exchangeData }) => {
   return (
-    <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>EGP</th>
-        <th>CAD</th>
-      </tr>
-    </thead>
-    <tbody>
-      {Object.keys(exchangeData.quotes).map((item: any) => (
-        <tr key={item}>
-          <td>{item}</td>
-          <td>{exchangeData.quotes[item].USDEGP}</td>
-          <td>{exchangeData.quotes[item].USDCAD}</td>
+    <table className="table__wrapper">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>EGP</th>
+          <th>CAD</th>
         </tr>
-      ))}
-    </tbody>
-  </table>
-  )
-}
+      </thead>
+      <tbody>
+        {Object.keys(exchangeData.quotes).map((item: string) => (
+          <tr key={item}>
+            <td>{item}</td>
+            <td>{exchangeData.quotes[item].USDEGP}</td>
+            <td>{exchangeData.quotes[item].USDCAD}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+};
 
-export default Table
+export default Table;
