@@ -1,4 +1,4 @@
-import React, { FC, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import axios from "axios";
 import { FallingLines } from "react-loader-spinner";
 import Table from "./Table";
@@ -7,31 +7,31 @@ const baseURL = "http://api.exchangerate.host/timeframe?";
 const ACCESS_KEY = "b8e97526bd00a09c25a0b8705fd36069";
 
 interface DateRangePickerProps {
-  onDateRangeChange?: (
-    startDate: string | null,
-    endDate: string | null
-  ) => void;
+  date?: string | null;
 }
 
-const DatePicker: FC<DateRangePickerProps> = ({ onDateRangeChange }) => {
-  const [startDate, setStartDate] = useState<string | null>(null);
-  const [endDate, setEndDate] = useState<string | null>(null);
+const DatePicker: FC<DateRangePickerProps> = ({ date }) => {
+  const [startDate, setStartDate] = useState<typeof date>(null);
+  const [endDate, setEndDate] = useState<typeof date>(null);
+  const [todayFormatted, setTodayFormatted] = useState<typeof date>(null);
   const [exchangeData, setExchangeData] = useState<any | null>({});
   const [loader, setLoader] = useState<boolean>(false);
   const [error, setError] = useState<boolean>(false);
+
+  useEffect(() => {
+    setTodayFormatted(getFormattedDate());
+  }, []);
 
   const handleStartDateChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const date = event.target.value ? event.target.value : null;
     setStartDate(date);
-    if (onDateRangeChange) onDateRangeChange(date, endDate);
   };
 
   const handleEndDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const date = event.target.value ? event.target.value : null;
     setEndDate(date);
-    if (onDateRangeChange) onDateRangeChange(startDate, date);
   };
 
   const getExchangeData = async () => {
@@ -60,11 +60,19 @@ const DatePicker: FC<DateRangePickerProps> = ({ onDateRangeChange }) => {
     if (startDate && endDate) {
       setError(false);
       getExchangeData();
-    }
-    {
+    } else {
       setError(true);
     }
   };
+
+  function getFormattedDate() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0"); // Months are zero-based
+    const day = String(today.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
 
   return (
     <div className="datePicker__wrapper">
@@ -76,8 +84,9 @@ const DatePicker: FC<DateRangePickerProps> = ({ onDateRangeChange }) => {
             <input
               type="date"
               id="startDate"
-              value={startDate ? startDate.toString().split("T")[0] : ""}
+              value={startDate ?? ""}
               onChange={handleStartDateChange}
+              max={endDate ?? todayFormatted ?? ""}
             />
           </div>
           <div className="datePicker__wrapper-endDate">
@@ -85,19 +94,22 @@ const DatePicker: FC<DateRangePickerProps> = ({ onDateRangeChange }) => {
             <input
               type="date"
               id="endDate"
-              value={endDate ? endDate.toString().split("T")[0] : ""}
+              value={endDate ?? ""}
               onChange={handleEndDateChange}
-              min={startDate ? startDate.toString().split("T")[0] : ""}
+              min={startDate ?? ""}
+              max={todayFormatted ?? ""}
             />
           </div>
         </div>
-        {error && <p className="errorMessage">Please select a valid range</p>}
-        <button className="datePicker__submitBtn" onClick={handleSubmit}>Submit</button>
+        {error && <p className="errorMessage">Please select a date range</p>}
+        <button className="datePicker__submitBtn" onClick={handleSubmit}>
+          Submit
+        </button>
       </div>
-      {loader && !exchangeData.quotes && (
+      {loader && !exchangeData.success && (
         <FallingLines color="#e6f7ff" width="100" visible={true} />
       )}
-      {exchangeData.quotes && <Table exchangeData={exchangeData} />}
+      {exchangeData.success && <Table exchangeData={exchangeData} />}
     </div>
   );
 };
